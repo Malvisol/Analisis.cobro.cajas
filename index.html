@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema de Cobro de Boletas — RAFAM</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f7f6f3;
+    --surface: #ffffff;
+    --surface2: #f0efe9;
+    --border: #e0ddd5;
+    --border2: #cbc8bf;
+    --text: #1a1917;
+    --text2: #5a574f;
+    --text3: #8c8980;
+    --accent: #1a4fd6;
+    --accent-bg: #eef2fc;
+    --green: #166534;
+    --green-bg: #dcfce7;
+    --amber: #92400e;
+    --amber-bg: #fef3c7;
+    --red: #991b1b;
+    --red-bg: #fee2e2;
+    --purple: #5b21b6;
+    --purple-bg: #ede9fe;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+
+  .page {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 3rem 2rem 6rem;
+  }
+
+  /* Header */
+  .header {
+    border-bottom: 2px solid var(--text);
+    padding-bottom: 2rem;
+    margin-bottom: 3rem;
+  }
+  .header-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 0.75rem;
+  }
+  .header h1 {
+    font-size: 2.25rem;
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.5rem;
+  }
+  .header p {
+    color: var(--text2);
+    font-size: 15px;
+    font-weight: 300;
+  }
+
+  /* Section */
+  .section {
+    margin-bottom: 3.5rem;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+  .step-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text3);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 3px 8px;
+    white-space: nowrap;
+  }
+  .section h2 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  /* Card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .card + .card { margin-top: 1rem; }
+
+  .card h3 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text3);
+    margin-bottom: 0.75rem;
+  }
+
+  /* Two col */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  @media (max-width: 620px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* SQL block */
+  .sql {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    overflow-x: auto;
+    line-height: 1.7;
+    margin: 0.75rem 0 0;
+  }
+  .sql .kw { color: #569cd6; }
+  .sql .str { color: #ce9178; }
+  .sql .num { color: #b5cea8; }
+  .sql .cm { color: #6a9955; }
+
+  /* Result badge */
+  .result-note {
+    font-size: 13px;
+    color: var(--text2);
+    background: var(--surface2);
+    border-left: 3px solid var(--border2);
+    padding: 0.6rem 0.85rem;
+    border-radius: 0 6px 6px 0;
+    margin-top: 0.75rem;
+  }
+  .result-note strong { color: var(--text); }
+
+  /* Fields grid */
+  .fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+  .field {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-size: 13px;
+  }
+  .field-name { font-weight: 500; color: var(--text); }
+  .field-note { font-size: 11.5px; color: var(--text3); margin-top: 2px; }
+
+  /* Badge */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    border-radius: 4px;
+    padding: 2px 8px;
+  }
+  .badge-blue { background: var(--accent-bg); color: var(--accent); }
+  .badge-green { background: var(--green-bg); color: var(--green); }
+  .badge-amber { background: var(--amber-bg); color: var(--amber); }
+  .badge-red { background: var(--red-bg); color: var(--red); }
+  .badge-purple { background: var(--purple-bg); color: var(--purple); }
+
+  /* Alert */
+  .alert {
+    display: flex;
+    gap: 0.75rem;
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    font-size: 13.5px;
+    margin-top: 0.75rem;
+    line-height: 1.5;
+  }
+  .alert-icon { font-size: 16px; flex-shrink: 0; }
+  .alert-warn { background: var(--amber-bg); color: var(--amber); border: 1px solid #fcd34d; }
+  .alert-info { background: var(--accent-bg); color: #1e3a8a; border: 1px solid #93c5fd; }
+  .alert-red { background: var(--red-bg); color: var(--red); border: 1px solid #fca5a5; }
+
+  /* Table comparison */
+  .table-comp {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 0.5rem;
+  }
+  .table-comp th {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .table-comp td {
+    border: 1px solid var(--border);
+    padding: 0.5rem 0.75rem;
+    vertical-align: top;
+    color: var(--text);
+  }
+  .table-comp tr:nth-child(even) td { background: var(--surface2); }
+
+  /* Payment method card */
+  .method-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 1rem;
+    margin-top: 0.75rem;
+  }
+  .method-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+  }
+  .method-card .method-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .method-card ul {
+    list-style: none;
+    font-size: 12.5px;
+    color: var(--text2);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .method-card ul li::before { content: "→ "; color: var(--text3); }
+  .method-card .table-badge {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 6px;
+    margin-top: 0.75rem;
+    color: var(--text3);
+    display: inline-block;
+  }
+
+  /* Flow steps */
+  .flow {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-top: 0.75rem;
+  }
+  .flow-item {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  .flow-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .flow-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--text);
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .flow-dot.alt { background: var(--surface2); color: var(--text); border: 1px solid var(--border2); }
+  .flow-line {
+    width: 1px;
+    flex: 1;
+    min-height: 20px;
+    background: var(--border2);
+    margin: 4px 0;
+  }
+  .flow-content {
+    padding: 2px 0 1.25rem;
+    flex: 1;
+  }
+  .flow-content p { font-size: 13.5px; color: var(--text2); margin-top: 2px; }
+  .flow-content strong { color: var(--text); font-weight: 500; }
+
+  /* Divider */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2.5rem 0;
+  }
+
+  /* Stat row */
+  .stat-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 0.75rem;
+  }
+  .stat {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    min-width: 140px;
+  }
+  .stat-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 4px; }
+  .stat-value { font-family: var(--mono); font-size: 18px; font-weight: 500; color: var(--text); }
+  .stat-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+  /* Inline code */
+  code {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 5px;
+    color: var(--text);
+  }
+
+  .tag-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1rem; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-tag">Análisis técnico · Sistema RAFAM · Base de datos: OWNER_RAFAM</div>
+    <h1>Cobro de Boletas en Caja</h1>
+    <p>Documentación del proceso de atención al público, medios de pago y tablas involucradas</p>
+  </div>
+
+  <!-- SECCIÓN 1 -->
+  <div class="section">
+    <div class="section-header">
+      <span class="step-num">01</span>
+      <h2>Creación del movimiento</h2>
+    </div>
+
+    <div class="card">
+      <h3>Qué sucede</h3>
+      <p style="font-size:14px; color:var(--text2);">Por cada contribuyente atendido, el cajero crea un <strong>movimiento</strong> en RAFAM. Ese movimiento agrupa todos los comprobantes que la persona va a pagar. El número de movimiento <em>no se asigna</em> hasta que el movimiento se guarda.</p>
+
+      <div class="stat-row" style="margin-top:1rem;">
+        <div class="stat">
+          <div class="stat-label">Tabla principal</div>
+          <div class="stat-value" style="font-size:14px;">ING_CAJA_CAB</div>
+          <div class="stat-sub">Un registro = una persona atendida</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Datos iniciales</div>
+          <div class="stat-value" style="font-size:14px;">Cajero + Fecha</div>
+          <div class="stat-sub">NRO_MOV se asigna al guardar</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <h3>Ejemplo — usuario VILADEM · 28/05/2026</h3>
+        <div class="sql"><span class="kw">SELECT</span> * <span class="kw">FROM</span> ING_CAJA_CAB<br><span class="kw">WHERE</span> USUARIO = <span class="str">'VILADEM'</span><br>  <span class="kw">AND</span> FECHA_COBRANZA = <span class="kw">TIMESTAMP</span> <span class="str">'2026-05-28 00:00:00.000000'</span>;</div>
+        <div class="result-note">
+          <strong>40 personas atendidas</strong> · Total cobrado: <strong>$17.058.969,37</strong><br>
+          <span style="font-size:12px;">Cada registro = 1 movimiento (= 1 persona)</span>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Campos clave de ING_CAJA_CAB</h3>
+        <div class="fields" style="grid-template-columns:1fr;">
+          <div class="field"><div class="field-name">EJERCICIO</div><div class="field-note">Año fiscal (ej: 2026)</div></div>
+          <div class="field"><div class="field-name">NRO_MOV</div><div class="field-note">Número de movimiento (PK)</div></div>
+          <div class="field"><div class="field-name">USUARIO</div><div class="field-note">Cajero que atendió</div></div>
+          <div class="field"><div class="field-name">FECHA_COBRANZA</div><div class="field-note">Fecha de atención</div></div>
+          <div class="field"><div class="field-name">MONTO_TOTAL</div><div class="field-note">Suma de todos los comprobantes</div></div>
+          <div class="field"><div class="field-name">MONTO_EFECTIVO / MONTO_TARJETA / MONTO_CHEQUES / SMONTO_IT</div><div class="field-note">Desglose por medio de pago</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECCIÓN 2 -->
+  <div class="section">
+    <div class="section-header">
+      <span class="step-num">02</span>
+      <h2>Carga de comprobantes (escaneo de boletas)</h2>
+    </div>
+
+    <div class="card">
+      <p style="font-size:14px; color:var(--text2);">El cajero <strong>escanea las boletas físicas</strong> del contribuyente. Para eso debe tener RAFAM abierto y el cursor en el campo <strong>Código de Barras</strong>. También puede ingresarlo manualmente. Cada boleta escaneada se carga como un comprobante en el movimiento.</p>
+      <div class="alert alert-info" style="margin-top:0.75rem;">
+        <span class="alert-icon">ℹ</span>
+        El campo "Código de Barras" puede completarse manualmente si el lector falla.
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <h3>Tabla: ING_CAJA_DET</h3>
+        <p style="font-size:13px; color:var(--text2); margin-bottom:0.75rem;">Detalle de comprobantes por movimiento. Un movimiento puede tener N comprobantes.</p>
+        <div class="sql"><span class="kw">SELECT</span> * <span class="kw">FROM</span> ING_CAJA_DET<br><span class="kw">WHERE</span> EJERCICIO = <span class="num">2026</span><br>  <span class="kw">AND</span> NRO_MOV = <span class="num">22397</span>;</div>
+        <div class="result-note">
+          Movimiento <strong>22397</strong> (usuario VILADEM): pagó <strong>1 comprobante</strong> por <strong>$361.971,95</strong>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Campos clave de ING_CAJA_DET</h3>
+        <div class="fields" style="grid-template-columns:1fr;">
+          <div class="field"><div class="field-name">NRO_MOV</div><div class="field-note">FK → ING_CAJA_CAB</div></div>
+          <div class="field"><div class="field-name">ORDEN</div><div class="field-note">Orden del comprobante en el movimiento</div></div>
+          <div class="field"><div class="field-name">TIPO_COMPROB / NRO_COMPROB</div><div class="field-note">Identificador del comprobante</div></div>
+          <div class="field"><div class="field-name">MONTO</div><div class="field-note">Monto del comprobante</div></div>
+          <div class="field"><div class="field-name">MONTO_INTERES</div><div class="field-note">Interés si corresponde</div></div>
+          <div class="field"><div class="field-name">ESTADO</div><div class="field-note">Estado del comprobante (P = Pendiente)</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECCIÓN 3 -->
+  <div class="section">
+    <div class="section-header">
+      <span class="step-num">03</span>
+      <h2>Medios de pago</h2>
+    </div>
+
+    <p style="font-size:14px; color:var(--text2); margin-bottom:1.25rem;">El total a pagar puede abonarse con <strong>uno o más medios de cobro</strong>. El área limita a un máximo de 2 para evitar errores operativos.</p>
+
+    <div class="method-grid">
+
+      <!-- EFECTIVO -->
+      <div class="method-card">
+        <div class="method-title">
+          <span class="badge badge-green">💵</span> Efectivo
+        </div>
+        <ul>
+          <li>Clearing: EF (fijo, automático)</li>
+          <li>Importe: carga manual</li>
+        </ul>
+        <div class="table-badge">ING_CAJA_EF</div>
+        <div class="alert alert-warn" style="margin-top:0.75rem; font-size:12px; padding:0.6rem 0.75rem;">
+          <span>⚠</span>
+          <span>En la práctica, cuando se paga todo en efectivo, el cajero guarda sin completar la solapa. RAFAM registra el monto en <code>MONTO_EFECTIVO</code> de la cabecera pero <strong>no escribe en ING_CAJA_EF</strong>. Esta tabla debería llenarse.</span>
+        </div>
+      </div>
+
+      <!-- CHEQUES -->
+      <div class="method-card">
+        <div class="method-title">
+          <span class="badge badge-blue">🏦</span> Cheques
+        </div>
+        <ul>
+          <li>Banco (lista BD)</li>
+          <li>Sucursal (lista BD)</li>
+          <li>Serie — carga manual</li>
+          <li>N° Cheque — carga manual</li>
+          <li>Clearing: siempre 48 hs</li>
+          <li>Importe — carga manual</li>
+          <li>Librador — carga manual</li>
+          <li>Fecha pago / Fecha cheque</li>
+        </ul>
+        <div class="table-badge">ING_CHEQUES</div>
+      </div>
+
+      <!-- INTERDEP / TRANSFERENCIA -->
+      <div class="method-card">
+        <div class="method-title">
+          <span class="badge badge-purple">🔁</span> Interdep./Transf.
+        </div>
+        <ul>
+          <li>Banco (lista BD)</li>
+          <li>Sucursal (lista BD)</li>
+          <li>Cuenta — carga manual</li>
+          <li>Comprobante (N° cupón posnet)</li>
+          <li>Monto — carga manual</li>
+          <li>Comisión: N/S (default: N)</li>
+          <li>Clearing: SC (sin clearing)</li>
+        </ul>
+        <div class="table-badge">ING_CAJA_IT</div>
+      </div>
+
+      <!-- TARJETAS -->
+      <div class="method-card">
+        <div class="method-title">
+          <span class="badge badge-amber">💳</span> Tarjetas
+        </div>
+        <ul>
+          <li>Tarjeta: VISA / MASTERCARD / AMEX / QR</li>
+          <li>Tipo: C (crédito) o D (débito)</li>
+          <li>Nro. Tarjeta: últimos 4 dígitos</li>
+          <li>Comprobante (N° cupón posnet)</li>
+          <li>Cuotas: siempre 1 (ver nota)</li>
+          <li>Monto Cuota — carga manual</li>
+        </ul>
+        <div class="table-badge">ING_CAJA_TCD</div>
+        <div class="alert alert-warn" style="margin-top:0.75rem; font-size:12px; padding:0.6rem 0.75rem;">
+          <span>⚠</span>
+          <span>Se detectaron registros con 3 cuotas en BD. Se asume error operativo.</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Ejemplo movimiento 22397 -->
+    <div class="card" style="margin-top:1.5rem;">
+      <h3>Ejemplo — movimiento 22397 (pago mixto)</h3>
+      <div class="sql"><span class="kw">SELECT</span> EJERCICIO, NRO_MOV, MONTO_EFECTIVO, MONTO_TARJETA, SMONTO_IT, MONTO_CHEQUES, MONTO_TOTAL<br><span class="kw">FROM</span> ING_CAJA_CAB <span class="kw">WHERE</span> EJERCICIO = <span class="num">2026</span> <span class="kw">AND</span> NRO_MOV = <span class="num">22397</span>;</div>
+      <div class="stat-row" style="margin-top:1rem;">
+        <div class="stat"><div class="stat-label">Total a pagar</div><div class="stat-value">$361.971,95</div></div>
+        <div class="stat"><div class="stat-label">Efectivo</div><div class="stat-value">$344.200</div><div class="stat-sub">No escrito en ING_CAJA_EF ⚠</div></div>
+        <div class="stat"><div class="stat-label">Tarjeta</div><div class="stat-value">$17.771,95</div><div class="stat-sub">Sí guardado en ING_CAJA_TCD ✓</div></div>
+      </div>
+
+      <div class="two-col" style="margin-top:1rem;">
+        <div>
+          <p style="font-size:12px; color:var(--text3); margin-bottom:0.4rem;">Detalle tarjeta (ING_CAJA_TCD)</p>
+          <table class="table-comp">
+            <thead><tr><th>TARJETA</th><th>TIPO</th><th>NRO_TARJETA</th><th>COMPROBANTE</th><th>CUOTAS</th><th>MONTO</th></tr></thead>
+            <tbody><tr><td>004 (QR)</td><td>C</td><td>4929</td><td>9.533</td><td>1</td><td>$17.771,95</td></tr></tbody>
+          </table>
+        </div>
+        <div>
+          <p style="font-size:12px; color:var(--text3); margin-bottom:0.4rem;">Efectivo (ING_CAJA_EF) — resultado esperado</p>
+          <table class="table-comp">
+            <thead><tr><th>EJERCICIO</th><th>NRO_MOV</th><th>CLEARING</th><th>MONTO</th></tr></thead>
+            <tbody><tr><td colspan="4" style="color:var(--red); text-align:center; font-style:italic;">NULL — no se registra actualmente</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECCIÓN 4 — POSNET -->
+  <div class="section">
+    <div class="section-header">
+      <span class="step-num">04</span>
+      <h2>Flujo de cobro por Posnet (Payway)</h2>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <h3>A — Pago con tarjeta</h3>
+        <div class="flow">
+          <div class="flow-item">
+            <div class="flow-left"><div class="flow-dot">1</div><div class="flow-line"></div></div>
+            <div class="flow-content"><strong>Cargar monto manualmente</strong><p>El posnet arranca en $0; el cajero ingresa el importe.</p></div>
+          </div>
+          <div class="flow-item">
+            <div class="flow-left"><div class="flow-dot">2</div><div class="flow-line"></div></div>
+            <div class="flow-content"><strong>Seleccionar "Tarjeta"</strong><p>Elegir Crédito o Débito.</p></div>
+          </div>
+          <div class="flow-item">
+            <div class="flow-left"><div class="flow-dot">3</div><div class="flow-line"></div></div>
+            <div class="flow-content"><strong>El contribuyente apoya la tarjeta</strong></div>
+          </div>
+          <div class="flow-item">
+            <div class="flow-left"><div class="flow-dot">4</div><div class="flow-line"></div></div>
+            <div class="flow-content"><strong>Finalizar</strong></div>
+          </div>
+          <div class="flow-item">
+            <div class="flow-left"><div class="flow-dot">5</div></div>
+            <div class="flow-content"><strong>Ticket del posnet</strong><p>El contribuyente firma el ticket (pago con tarjeta).</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>B — Pago con QR</h3>
+        <div class="flow">
+          <div class="flow-item">
+            <div class="flow-left"><div class="flow-dot">1</div><div class="flow-line"></div></div>
+            <div class="flow-content"><strong>Cargar monto manualmente</strong><p>El posnet arranca en $0.</p></div>
+          </div>
+          <div class="flow-item">
+            <div class="flow-left"><div class="flow-dot">2</div><div class="flow-line"></div></div>
+            <div class="flow-content"><strong>Seleccionar "QR"</strong></div>
+          </div>
+          <div class="flow-item">
+            <div class="flow-left"><div class="flow-dot">3</div><div class="flow-line"></div></div>
+            <div class="flow-content"><strong>El contribuyente escanea el QR</strong><p>El código está pegado en la ventanilla.</p></div>
+          </div>
+          <div class="flow-item">
+            <div class="flow-left"><div class="flow-dot">4</div><div class="flow-line"></div></div>
+            <div class="flow-content"><strong>Finalizar</strong></div>
+          </div>
+          <div class="flow-item">
+            <div class="flow-left"><div class="flow-dot">5</div></div>
+            <div class="flow-content"><strong>Ticket del posnet</strong><p>No requiere firma.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="alert alert-info" style="margin-top:0.75rem;">
+      <span class="alert-icon">ℹ</span>
+      También existe la opción "Cobro dividido" en el posnet, pero el área no la utiliza.
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECCIÓN 5 — CIERRE -->
+  <div class="section">
+    <div class="section-header">
+      <span class="step-num">05</span>
+      <h2>Cierre del movimiento y documentación física</h2>
+    </div>
+
+    <div class="card">
+      <p style="font-size:14px; color:var(--text2);">Una vez cobrado el total, el cajero <strong>guarda el movimiento en RAFAM</strong>. El sistema genera un ticket de cobro. Si se usó el posnet, también se agrega el ticket que emite Payway.</p>
+    </div>
+
+    <div class="two-col" style="margin-top:1rem;">
+      <div class="card">
+        <h3>Documentos que retiene el cajero</h3>
+        <div class="flow" style="margin-top:0.25rem;">
+          <div class="flow-item">
+            <div class="flow-left"><div class="flow-dot alt">A</div><div class="flow-line"></div></div>
+            <div class="flow-content"><strong>Parte inferior de la boleta</strong><p>El contribuyente entrega la boleta; el cajero recorta y archiva la parte de abajo.</p></div>
+          </div>
+          <div class="flow-item">
+            <div class="flow-left"><div class="flow-dot alt">B</div><div class="flow-line"></div></div>
+            <div class="flow-content"><strong>Ticket de RAFAM</strong><p>Se genera al guardar el movimiento.</p></div>
+          </div>
+          <div class="flow-item">
+            <div class="flow-left"><div class="flow-dot alt">C</div></div>
+            <div class="flow-content"><strong>Ticket del posnet (si aplica)</strong><p>Solo en pagos con tarjeta o QR a través de Payway.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Limitaciones a confirmar / pendientes</h3>
+        <div class="fields" style="grid-template-columns:1fr; gap:0.5rem; margin-top:0.25rem;">
+          <div class="field" style="border-left:3px solid #fcd34d;">
+            <div class="field-name">ING_CAJA_EF vacía</div>
+            <div class="field-note">Cuando el pago es todo en efectivo, RAFAM no escribe en esta tabla. Debería hacerlo.</div>
+          </div>
+          <div class="field" style="border-left:3px solid #fcd34d;">
+            <div class="field-name">Importe de efectivo</div>
+            <div class="field-note">Confirmar si puede ser mayor o menor al total (vuelto o pago parcial).</div>
+          </div>
+          <div class="field" style="border-left:3px solid #fca5a5;">
+            <div class="field-name">Cuotas en tarjeta</div>
+            <div class="field-note">Debería ser siempre 1, pero hay registros con 3 en BD. Verificar si es error de carga.</div>
+          </div>
+          <div class="field" style="border-left:3px solid #93c5fd;">
+            <div class="field-name">Clearing efectivo</div>
+            <div class="field-note">Se debe automatizar y fijar en "EF. Efectivo" sin que el cajero lo elija.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECCIÓN 6 — TABLAS -->
+  <div class="section">
+    <div class="section-header">
+      <span class="step-num">06</span>
+      <h2>Resumen de tablas involucradas</h2>
+    </div>
+
+    <div class="card">
+      <table class="table-comp">
+        <thead>
+          <tr>
+            <th>Tabla</th>
+            <th>Qué guarda</th>
+            <th>Relación</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>ING_CAJA_CAB</code></td>
+            <td>Cabecera del movimiento (cajero, fecha, totales)</td>
+            <td>1 registro = 1 persona atendida</td>
+            <td><span class="badge badge-green">OK</span></td>
+          </tr>
+          <tr>
+            <td><code>ING_CAJA_DET</code></td>
+            <td>Comprobantes cargados en un movimiento</td>
+            <td>N registros por NRO_MOV</td>
+            <td><span class="badge badge-green">OK</span></td>
+          </tr>
+          <tr>
+            <td><code>ING_CAJA_EF</code></td>
+            <td>Detalle de pagos en efectivo</td>
+            <td>FK → ING_CAJA_CAB</td>
+            <td><span class="badge badge-red">No se usa ⚠</span></td>
+          </tr>
+          <tr>
+            <td><code>ING_CHEQUES</code></td>
+            <td>Datos de cheques recibidos</td>
+            <td>FK → ING_CAJA_CAB</td>
+            <td><span class="badge badge-green">OK</span></td>
+          </tr>
+          <tr>
+            <td><code>ING_CAJA_IT</code></td>
+            <td>Interdepósitos y transferencias</td>
+            <td>FK → ING_CAJA_CAB</td>
+            <td><span class="badge badge-green">OK</span></td>
+          </tr>
+          <tr>
+            <td><code>ING_CAJA_TCD</code></td>
+            <td>Pagos con tarjeta (crédito/débito/QR)</td>
+            <td>FK → ING_CAJA_CAB</td>
+            <td><span class="badge badge-green">OK</span></td>
+          </tr>
+          <tr>
+            <td><code>ENT_BANCARIAS</code></td>
+            <td>Lista de bancos (125)</td>
+            <td>Referencia para cheques e interdep.</td>
+            <td><span class="badge badge-blue">Referencia</span></td>
+          </tr>
+          <tr>
+            <td><code>SUC_BANCARIAS</code></td>
+            <td>Sucursales por banco (742)</td>
+            <td>FK → ENT_BANCARIAS</td>
+            <td><span class="badge badge-blue">Referencia</span></td>
+          </tr>
+          <tr>
+            <td><code>CLEARING</code></td>
+            <td>Tipos de clearing (24h, 48h, 72h, SC…)</td>
+            <td>Referencia para cheques e interdep.</td>
+            <td><span class="badge badge-blue">Referencia</span></td>
+          </tr>
+          <tr>
+            <td><code>TARJETAS</code></td>
+            <td>Tarjetas disponibles (VISA, MC, AMEX, QR)</td>
+            <td>Referencia para ING_CAJA_TCD</td>
+            <td><span class="badge badge-blue">Referencia</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
