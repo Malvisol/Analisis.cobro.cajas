@@ -491,14 +491,14 @@ document.querySelectorAll('.has-preview').forEach(el => {
     const tt = el.querySelector('.img-tooltip');
     if (!tt) return;
     const pad = 14;
-    const ttW = 680;
-    const ttH = tt.offsetHeight || 420;
+    const ttW = 680; // <--- CAMBIA ESTE VALOR por el mismo del CSS (ej. 850)
+    const ttH = tt.offsetHeight || 420; // <--- OPCIONAL: Sube el 420 (ej. a 530) ya que al ser más ancha, la imagen será más alta
     let x = e.clientX + pad;
     let y = e.clientY + pad;
     if (x + ttW > window.innerWidth - 10) x = e.clientX - ttW - pad;
     if (y + ttH > window.innerHeight - 10) y = e.clientY - ttH - pad;
     tt.style.left = x + 'px';
-    tt.style.top  = y + 'px';
+    tt.style.top = y + 'px';
   });
 });
 </script>
