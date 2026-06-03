@@ -34,7 +34,6 @@
             margin: 15px 0;
             border: 1px solid #eaeaea;
         }
-        /* Contenedor crítico para forzar el tamaño de las imágenes */
         .image-container {
             width: 100%;
             text-align: center;
@@ -47,7 +46,7 @@
         }
         .image-container img {
             width: 100%;
-            max-width: 950px; /* Forzado de tamaño máximo expansivo */
+            max-width: 950px;
             height: auto;
             border-radius: 4px;
             display: block;
@@ -74,6 +73,15 @@
         tr:nth-child(even) { background-color: #fbfcfe; }
         .highlight { font-weight: bold; color: #0f172a; }
         hr { border: 0; border-top: 1px solid #eef0f2; margin: 40px 0; }
+        .badge {
+            background-color: #e2e8f0;
+            color: #475569;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: monospace;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -83,7 +91,73 @@
 
     <hr>
 
-    <h2>1. Flujo General de Atención y Escaneo</h2>
+    <h2>1. Estructura de Persistencia: Tabla ING_CAJA_CAB</h2>
+    <p>A continuación, se detallan los campos clave que gobiernan la cabecera del movimiento diario de cajas según la definición de tipos en el diccionario de datos de Oracle.</p>
+
+    <div class="image-container">
+        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAB1QAAAKCCAYAAABmqOtZAAAAAXNSR0IArs4c6Q..." alt="Campos clave de ING_CAJA_CAB">
+        <div class="image-caption">Figura 1: Mapeo y definición de columnas de la tabla transaccional de cabecera ING_CAJA_CAB.</div>
+    </div>
+
+    <h3>Diccionario Técnico de Columnas Críticas</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Nombre del Campo</th>
+                <th>Tipo de Dato</th>
+                <th>Clave</th>
+                <th>Descripción / Regla de Negocio Asociada</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="highlight"><code>EJERCICIO</code></td>
+                <td><span class="badge">NUMBER(4)</span></td>
+                <td>PK</td>
+                <td>Año fiscal de la recaudación (ej: 2026). Parte de la clave primaria compuesta.</td>
+            </tr>
+            <tr>
+                <td class="highlight"><code>NRO_MOV</code></td>
+                <td><span class="badge">NUMBER(8)</span></td>
+                <td>PK</td>
+                <td>Secuencial único por ejercicio que identifica la atención del contribuyente en ventanilla.</td>
+            </tr>
+            <tr>
+                <td class="highlight"><code>FECHA_COBRANZA</code></td>
+                <td><span class="badge">DATE / TIMESTAMP</span></td>
+                <td>-</td>
+                <td>Fecha y hora exacta en la que el cajero efectúa el cierre definitivo y guarda el cobro.</td>
+            </tr>
+            <tr>
+                <td class="highlight"><code>USUARIO</code></td>
+                <td><span class="badge">VARCHAR2(30)</span></td>
+                <td>-</td>
+                <td>ID del operador de caja que realizó la transacción (ej: 'VILADEM'). Auditoría directa.</td>
+            </tr>
+            <tr>
+                <td class="highlight"><code>TOTAL_PAGADO</code></td>
+                <td><span class="badge">NUMBER(15,2)</span></td>
+                <td>-</td>
+                <td>Monto final total de la operación que debe coincidir obligatoriamente con el ticket físico emitido.</td>
+            </tr>
+            <tr>
+                <td class="highlight"><code>MONTO_EFECTIVO</code></td>
+                <td><span class="badge">NUMBER(15,2)</span></td>
+                <td>-</td>
+                <td>Subtotal ingresado bajo modalidad efectivo. Presenta la anomalía de no generar registro hijo.</td>
+            </tr>
+            <tr>
+                <td class="highlight"><code>MONTO_TARJETA</code></td>
+                <td><span class="badge">NUMBER(15,2)</span></td>
+                <td>-</td>
+                <td>Subtotal ingresado mediante terminales de débito/crédito (Payway / POS).</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <hr>
+
+    <h2>2. Flujo General de Atención y Escaneo</h2>
     <p>Por cada contribuyente atendido en ventanilla, el cajero inicia un nuevo movimiento operativo. Este identificador agrupa la totalidad de los comprobantes que la persona liquidará en esa misma sesión.</p>
 
     <h3>Creación del Movimiento</h3>
@@ -93,27 +167,12 @@
         <li><span class="highlight">Tabla afectada:</span> <code>ING_CAJA_CAB</code></li>
     </ul>
 
-    <!-- IMAGEN: Inicio del Movimiento -->
-    <div class="image-container">
-        <img src="image_3b0f3a.jpg" alt="Pantalla de inicio de movimiento en RAFAM">
-        <div class="image-caption">Figura 1: Pantalla principal de inicio de movimiento y control de transacciones en RAFAM.</div>
-    </div>
-
     <div class="code-block">
 -- Ejemplo de consulta de control: Movimientos del día por cajero
-SELECT * FROM ING_CAJA_CAB 
+SELECT EJERCICIO, NRO_MOV, FECHA_COBRANZA, TOTAL_PAGADO 
+FROM ING_CAJA_CAB 
 WHERE USUARIO = 'VILADEM' 
-  AND FECHA_COBRANZA = TIMESTAMP '2026-05-28 00:00:00.000000';
-    </div>
-
-    <!-- IMAGEN: Resultado Query Cabecera -->
-    <div class="image-container">
-        <img src="image_3b0f00.jpg" alt="Consulta SQL de movimientos diarios">
-        <div class="image-caption">Figura 2: Registros en BD que confirman la atención de 40 contribuyentes por el usuario VILADEM.</div>
-    </div>
-
-    <div class="blockquote">
-        💡 <strong>Nota de negocio observada:</strong> Un registro en la tabla de cabecera equivale estrictamente a un ciudadano atendido. El volumen monetario total de la jornada se consolida en este nivel.
+  AND FECHA_COBRANZA >= TRUNC(SYSDATE);
     </div>
 
     <h3>Carga de Comprobantes (Escaneo de Barras)</h3>
@@ -122,27 +181,9 @@ WHERE USUARIO = 'VILADEM'
         <li><span class="highlight">Tabla afectada:</span> <code>ING_CAJA_DET</code> (registros vinculados mediante la clave compuesta <code>EJERCICIO</code> y <code>NRO_MOV</code>).</li>
     </ul>
 
-    <!-- IMAGEN: Campo Código de Barras -->
-    <div class="image-container">
-        <img src="image_3b0ea2.jpg" alt="Interfaz de carga de comprobantes">
-        <div class="image-caption">Figura 3: Foco del sistema requerido en la celda de captura del código de barras.</div>
-    </div>
-
-    <div class="code-block">
--- Detalle de comprobantes vinculados a un movimiento específico
-SELECT * FROM ING_CAJA_DET 
-WHERE EJERCICIO = 2026 AND NRO_MOV = 22397;
-    </div>
-
-    <!-- IMAGEN: Detalle Base de Datos -->
-    <div class="image-container">
-        <img src="image_3b0ec6.png" alt="Registros hijos de comprobantes en BD">
-        <div class="image-caption">Figura 4: Tabla ING_CAJA_DET indexando el comprobante por un valor parcial de $361.971,95.</div>
-    </div>
-
     <hr>
 
-    <h2>2. Medios de Cobro y Comportamiento de Persistencia</h2>
+    <h2>3. Medios de Cobro y Comportamiento de Persistencia</h2>
     <p>El sistema calcula el <strong>Total a Pagar</strong> consolidando las filas de la tabla de detalles. La operación permite al cajero fraccionar dicho monto en hasta un <strong>máximo de 2 métodos de pago</strong> concurrentes.</p>
 
     <h3>A. Efectivo</h3>
@@ -151,31 +192,6 @@ WHERE EJERCICIO = 2026 AND NRO_MOV = 22397;
         <li><span class="highlight">Anomalía del Sistema (Bug/Inconsistencia):</span> Si la transacción se liquida puramente en efectivo, el sistema actualiza directamente la columna consolidada en la cabecera (<code>ING_CAJA_CAB.MONTO_EFECTIVO</code>), pero <strong>omite la creación del registro en la tabla hija</strong> de detalle (<code>ING_CAJA_EF</code>), dejándola huérfana de datos para transacciones directas.</li>
     </ul>
 
-    <!-- IMAGEN: Ventana Emergente Efectivo -->
-    <div class="image-container">
-        <img src="image_3b0e62.png" alt="Formulario de ingreso de efectivo en UI">
-        <div class="image-caption">Figura 5: Ventana modal de RAFAM para la imputación de efectivo físico.</div>
-    </div>
-
-    <div class="code-block">
--- Ejemplo de movimiento mixto (Mov 22397) impactado en la cabecera general
-SELECT EJERCICIO, NRO_MOV, MONTO_EFECTIVO, MONTO_TARJETA, MONTO_TOTAL 
-FROM ING_CAJA_CAB 
-WHERE EJERCICIO = 2026 AND NRO_MOV = 22397;
-    </div>
-
-    <!-- IMAGEN: Query de control montos -->
-    <div class="image-container">
-        <img src="image_3b0e47.png" alt="Montos distribuidos en cabecera de base de datos">
-        <div class="image-caption">Figura 6: Persistencia en cabecera: División de $344.200,00 (Efectivo) y $17.771,95 (Tarjeta).</div>
-    </div>
-
-    <!-- IMAGEN: Query Vacía Efectivo Hijos -->
-    <div class="image-container">
-        <img src="image_3b0ee2.png" alt="Resultado nulo en tabla hija de efectivo">
-        <div class="image-caption">Figura 7: Verificación de la ausencia de registros hijos en la tabla detallada de efectivo para el mismo movimiento.</div>
-    </div>
-
     <h3>B. Cheques Terceros</h3>
     <ul>
         <li><span class="highlight">Comportamiento UI:</span> El uso de cheques obliga a completar campos estrictos del documento (Número de cheque, banco de procedencia y fecha de vencimiento).</li>
@@ -183,55 +199,18 @@ WHERE EJERCICIO = 2026 AND NRO_MOV = 22397;
         <li><span class="highlight">Tabla afectada:</span> <code>ING_CHEQUES</code></li>
     </ul>
 
-    <!-- IMAGEN: Formulario Cheques -->
-    <div class="image-container">
-        <img src="image_3b0e25.jpg" alt="Formulario de carga de cheques">
-        <div class="image-caption">Figura 8: Modal de ingreso de datos correspondientes al cheque de terceros.</div>
-    </div>
-
-    <!-- IMAGEN: Selector Clearing -->
-    <div class="image-container">
-        <img src="image_3b0aa2.png" alt="Opciones de clearing de cheques">
-        <div class="image-caption">Figura 9: Listado disponible en la interfaz para la selección de plazos de acreditación.</div>
-    </div>
-
-    <!-- IMAGEN: Grilla Base de Datos Cheques -->
-    <div class="image-container">
-        <img src="image_3b0ac0.png" alt="Registros de la tabla de cheques en base de datos">
-        <div class="image-caption">Figura 10: Grilla de persistencia de datos dentro de la tabla ING_CHEQUES.</div>
-    </div>
-
     <hr>
 
-    <h2>3. Matriz de Trazabilidad: Flujo de Información de un Caso Real</h2>
+    <h2>4. Matriz de Trazabilidad: Flujo de Información de un Caso Real</h2>
     <p>Para asegurar la integridad del desarrollo del nuevo sistema de <strong>Gestión de Recupero de Deuda</strong>, mapeamos el ciclo vital de un pago real de la tasa de <strong>Servicios Municipales</strong> por un total de <strong>$145.778,61</strong>, procesado mediante tarjeta de débito por el cajero <code>VILADEM</code>.</p>
 
-    <!-- IMAGEN: Boleta Emitida Completa -->
-    <div class="image-container">
-        <img src="image_3b06bf.jpg" alt="Boleta de tasas municipales original">
-        <div class="image-caption">Figura 11: Documento inicial de deuda con los datos del imponible y código de barras.</div>
-    </div>
-
-    <!-- IMAGEN: Ticket de Payway Posnet -->
-    <div class="image-container">
-        <img src="image_3ab52a.png" alt="Comprobante de operación de Payway">
-        <div class="image-caption">Figura 12: Comprobante financiero del procesador externo (POS / Payway) firmado por el contribuyente.</div>
-    </div>
-
-    <!-- IMAGEN: Ticket Final RAFAM Rendición -->
-    <div class="image-container">
-        <img src="image_3b06a4.jpg" alt="Ticket de caja definitivo de RAFAM">
-        <div class="image-caption">Figura 13: Ticket de rendición emitido por la ticketera de la caja municipal al cerrar el movimiento.</div>
-    </div>
-
-    <h3>Tabla de Mapeo y Equivalencias de Datos</h3>
     <table>
         <thead>
             <tr>
                 <th>Entidad / Atributo</th>
-                <th>Origen: Boleta de Pago (Fig. 11)</th>
-                <th>Tránsito: Operación POS (Fig. 12)</th>
-                <th>Destino: Ticket RAFAM (Fig. 13)</th>
+                <th>Origen: Boleta de Pago</th>
+                <th>Tránsito: Operación POS</th>
+                <th>Destino: Ticket RAFAM</th>
                 <th>Mapeo Físico en BD (Oracle)</th>
             </tr>
         </thead>
@@ -290,7 +269,7 @@ WHERE EJERCICIO = 2026 AND NRO_MOV = 22397;
 
     <hr>
 
-    <h2>4. Reglas de Negocio Clave para el Nuevo Desarrollo</h2>
+    <h2>5. Reglas de Negocio Clave para el Nuevo Desarrollo</h2>
     
     <div class="blockquote">
         ⚠️ <strong>Regla de Oro para Conciliaciones:</strong> El nuevo módulo de Cobro y Recupero de Deuda debe obligar por interfaz la inserción de los campos numéricos de control del posnet (<strong>Número de Cupón</strong> y <strong>Últimos 4 dígitos de la tarjeta</strong>). Sin este bloqueo por software, el área de Tesorería no puede automatizar el cruce con los extractos bancarios del Municipio.
